@@ -23,7 +23,7 @@ jobs:
       - name: Start the Application
         run: |
           docker build --pull -t web -f src/Web/Dockerfile .
-          docker build --pull -t publicapi -f src/PublicAPI/Dockerfile .
+          docker build --pull -t publicapi -f src/PublicApi/Dockerfile .
           docker run --name eshopweb --rm -d -p 5106:5106 web
           docker run --name eshoppublicapi --rm -d -p 5200:5200 publicapi
 
