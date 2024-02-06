@@ -22,10 +22,8 @@ jobs:
 
       - name: Start the Application
         run: |
-          docker build --pull -t web -f src/Web/Dockerfile .
-          docker build --pull -t publicapi -f src/PublicApi/Dockerfile .
-          docker run --name eshopweb --rm -d -p 5106:5106 web
-          docker run --name eshoppublicapi --rm -d -p 5200:5200 publicapi
+          docker-compose build
+          docker-compose up -d
 
       - name: Set target URL
         run: |
@@ -41,9 +39,9 @@ jobs:
           target: ${{ env.TARGET }}
           allow_issue_writing: false # Skip creating issue for now
           # token: ${{ secrets.GITHUB_TOKEN }}
-          # docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
+          docker_name: 'docker pull ghcr.io/zaproxy/zaproxy:20231218-stable' # zaproxy:20240103-stable breaks due to https://github.com/zaproxy/action-full-scan/issues/39
           # rules_file_name: '.zap/rules.tsv'
-          # cmd_options: '-a'
+          cmd_options: '-v $(pwd):/zap/wrk/:rw'
 
       - name: Upload ZAP Report for ${{ matrix.image }}
         uses: actions/upload-artifact@v4
