@@ -22,8 +22,10 @@ jobs:
 
       - name: Start the Application
         run: |
-          docker-compose build
-          docker-compose up -d
+          docker build --pull -t web -f src/Web/Dockerfile
+          docker build --pull -t publicapi -f src/PublicAPI/Dockerfile
+          docker run --name eshopweb --rm -d -p 5106:5106 web
+          docker run --name eshoppublicapi --rm -d -p 5200:5200 publicapi
 
       - name: Set target URL
         run: |
@@ -37,6 +39,7 @@ jobs:
         uses: zaproxy/action-baseline@v0.11.0
         with:
           target: ${{ env.TARGET }}
+          allow_issue_writing: false # Skip creating issue for now
           # token: ${{ secrets.GITHUB_TOKEN }}
           # docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
           # rules_file_name: '.zap/rules.tsv'
