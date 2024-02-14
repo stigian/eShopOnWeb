@@ -65,7 +65,6 @@ jobs:
         context: .
         file: ./src/${{ matrix.image }}/Dockerfile
         push: true
-        provenance: true
         sbom: true
         # tags: ${{ steps.docker_meta.outputs.tags }}
         tags: |
