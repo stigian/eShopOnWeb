@@ -39,18 +39,20 @@ jobs:
     - name: Convert image name to lowercase
       run: echo "IMAGE_NAME=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
 
-    - name: Generate Docker Metadata
-      id: docker_meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ghcr.io/${{ env.IMAGE_NAME }}
-        tags: type=sha,format=long
-        flavor: |
-          latest = auto
-          prefix =
-          suffix =
-        labels: |
-          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+    # # Need to play with this later. The docs recommend using the flavor field to set the latest tag,
+    # # but that field is not included in the step outputs, and so not available for the build-push-action.
+    # - name: Generate Docker Metadata
+    #   id: docker_meta
+    #   uses: docker/metadata-action@v5
+    #   with:
+    #     images: ghcr.io/${{ env.IMAGE_NAME }}
+    #     tags: type=sha,format=long
+    #     flavor: |
+    #       latest = auto
+    #       prefix =
+    #       suffix =
+    #     labels: |
+    #       org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
     # TODO: add docker/metadata-action to apply tags based on branch, env, etc.
     # TODO: consider project structure, where dockerfile might be, how devs might provide manifests, etc.
@@ -63,12 +65,14 @@ jobs:
         context: .
         file: ./src/${{ matrix.image }}/Dockerfile
         push: true
-        tags: ${{ steps.docker_meta.outputs.tags }}
-        # tags: |
-        #   ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        #   ghcr.io/${{ env.IMAGE_NAME }}:latest
-        # labels: |
-        #   org.opencontainers.image.source=https://github.com/${{ github.repository }}
+        provenance: true
+        sbom: true
+        # tags: ${{ steps.docker_meta.outputs.tags }}
+        tags: |
+          ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          ghcr.io/${{ env.IMAGE_NAME }}:latest
+        labels: |
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.4.0
@@ -78,6 +82,10 @@ jobs:
     - name: Verify Cosign version
       run: cosign version
 
+    # This is a short-lived key that won't be easy to verify by downstream consumers
+    # Technically the actions runner is signing the image, not an individual or organization
+    # Instead, we may wish to use a private key signing method, as shown in the commented
+    # out example below.
     - name: Sign the images with GitHub OIDC Token
       env:
         DIGEST: ${{ steps.build-and-push.outputs.digest }}
@@ -88,3 +96,17 @@ jobs:
           images+="${tag}@${DIGEST} "
         done
         cosign sign --yes ${images}
+
+    # # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+    # - name: Sign image with a key
+    #   run: |
+    #     images=""
+    #     for tag in ${TAGS}; do
+    #       images+="${tag}@${DIGEST} "
+    #     done
+    #     cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${images}
+    #   env:
+    #     TAGS: ${{ steps.docker_meta.outputs.tags }}
+    #     COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+    #     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+    #     DIGEST: ${{ steps.build-and-push.outputs.digest }}
