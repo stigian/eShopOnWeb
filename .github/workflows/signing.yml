@@ -10,8 +10,8 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  sign:
-    name: Sign
+  sign_and_sbom:
+    name: Sign and SBOM
     runs-on: ubuntu-latest
     permissions:
       contents: read
