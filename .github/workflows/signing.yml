@@ -57,11 +57,12 @@ jobs:
     - name: Save image tags
       run: echo "${{ steps.docker_meta.outputs.tags }}" > imagetags.txt
 
+    # Upload image tags to be used by other workflows, this helps with provenance and traceability
     - name: Upload image tags
       uses: actions/upload-artifact@v4
       with:
-        name: image-tags
-        path: imagetags.txt
+        name: image-tags-${{ matrix.image }}
+        path: imagetags-${{ matrix.image }}.txt
 
     # TODO: consider project structure, where dockerfile might be, how devs might provide manifests, etc.
     # TODO: add more tags as needed, e.g. branch, actions environment
