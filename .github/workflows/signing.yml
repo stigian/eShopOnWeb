@@ -138,5 +138,5 @@ jobs:
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
         docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ECR_URI }}/${{ matrix.image }}:${{ github.sha }}
-        docker push ${{ env.ECR_URI }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.ECR_URI }}/${{ matrix.image }}:${{ github.sha }}
 
