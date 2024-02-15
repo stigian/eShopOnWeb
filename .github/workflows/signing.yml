@@ -54,6 +54,15 @@ jobs:
         labels: |
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
+    - name: Save image tags
+      run: echo "${{ steps.docker_meta.outputs.tags }}" > imagetags.txt
+
+    - name: Upload image tags
+      uses: actions/upload-artifact@v4
+      with:
+        name: image-tags
+        path: imagetags.txt
+
     # TODO: consider project structure, where dockerfile might be, how devs might provide manifests, etc.
     # TODO: add more tags as needed, e.g. branch, actions environment
     - name: Build and Push ${{ matrix.image }} to ghcr.io
@@ -109,9 +118,6 @@ jobs:
     #     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
     #     DIGEST: ${{ steps.build-and-push.outputs.digest }}
 
-    - name: List local images
-      run: docker images
-
     - name: Generate SBOM
       uses: anchore/sbom-action@v0
       with:
@@ -125,6 +131,7 @@ jobs:
         audience: sts.amazonaws.com
         aws-region: ${{ env.AWS_REGION }}
         role-to-assume: arn:aws-us-gov:iam::348600370629:role/github-actions-ecr-role
+        role-session-name: GitHubActions-${{ github.actor }}
 
     - name: Login to Amazon ECR
       id: login-ecr
