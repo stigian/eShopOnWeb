@@ -8,6 +8,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  ECR_URI: 348600370629.dkr.ecr.us-gov-west-1.amazonaws.com/dotnet-repo
+  AWS_REGION: us-gov-west-1
 
 jobs:
   sign_and_sbom:
@@ -41,7 +43,7 @@ jobs:
 
     # Need to decide how to handle latest tag. Should it be on every branch, or just main, or just releases?
     # For now we put it on main for testing purposes.
-    - name: Generate Docker Metadata
+    - name: Generate GHCR Metadata
       id: docker_meta
       uses: docker/metadata-action@v5
       with:
@@ -116,4 +118,20 @@ jobs:
         image: ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
         artifact-name: sbom-${{ matrix.image }}-${{ github.sha }}.spdx.json
         upload-artifact: true
+
+    - name: Configure AWS Credentials for GovCloud
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        audience: sts.amazonaws.com
+        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: arn:aws-us-gov:iam::348600370629:role/github-actions-ecr-role
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Push to Amazon ECR
+      run: |
+        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ECR_URI }}:${{ github.sha }}
+        docker push ${{ env.ECR_URI }}:${{ github.sha }}
 
