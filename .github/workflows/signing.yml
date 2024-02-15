@@ -140,6 +140,6 @@ jobs:
         ECR_REPO: ${{ env.ECR_REPO }}
         IMAGE_NAME: ${{ env.IMAGE_NAME }}
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY/$IMAGE_NAME:${{ github.sha }} .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY/$IMAGE_NAME:${{ github.sha }}
+        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} $ECR_REGISTRY/$ECR_REPO/$IMAGE_NAME:${{ github.sha }}
+        docker push $ECR_REGISTRY/$ECR_REPO/$IMAGE_NAME:${{ github.sha }}
 
