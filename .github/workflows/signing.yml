@@ -52,7 +52,6 @@ jobs:
         labels: |
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-    # TODO: add docker/metadata-action to apply tags based on branch, env, etc.
     # TODO: consider project structure, where dockerfile might be, how devs might provide manifests, etc.
     # TODO: add more tags as needed, e.g. branch, actions environment
     - name: Build and Push ${{ matrix.image }}
@@ -108,12 +107,10 @@ jobs:
     #     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
     #     DIGEST: ${{ steps.build-and-push.outputs.digest }}
 
-  # sbom:
-  #   name: SBOM
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Checkout repository
-  #     uses: actions/checkout@v4
-  #     with:
-  #       fetch-depth: 1
+    - name: SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        artifact-name: sbom-${{ matrix.image }}-${{ github.sha }}.spdx.json
+        upload-artifact: true
 
