@@ -55,7 +55,7 @@ jobs:
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
     - name: Save image tags
-      run: echo "${{ steps.docker_meta.outputs.tags }}" > imagetags.txt
+      run: echo "${{ steps.docker_meta.outputs.tags }}" > imagetags-${{ matrix.image }}.txt
 
     # Upload image tags to be used by other workflows, this helps with provenance and traceability
     - name: Upload image tags
