@@ -47,7 +47,7 @@ jobs:
       with:
         images: ghcr.io/${{ env.IMAGE_NAME }}
         tags: |
-          type=sha,format=long
+          type=sha,format=long,prefix=,suffix=
           type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
         labels: |
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -110,7 +110,7 @@ jobs:
     - name: List local images
       run: docker images
 
-    - name: SBOM
+    - name: Generate SBOM
       uses: anchore/sbom-action@v0
       with:
         image: ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
