@@ -132,6 +132,6 @@ jobs:
 
     - name: Push to Amazon ECR
       run: |
-        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ECR_URI }}:${{ github.sha }}
-        docker push ${{ env.ECR_URI }}:${{ github.sha }}
+        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ECR_URI }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.ECR_URI }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
