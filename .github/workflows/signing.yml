@@ -38,6 +38,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.RPOC_PAT }}
 
+    # Container registries require lowercase image names
     - name: Convert image name to lowercase
       run: echo "IMAGE_NAME=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
 
@@ -56,7 +57,7 @@ jobs:
 
     # TODO: consider project structure, where dockerfile might be, how devs might provide manifests, etc.
     # TODO: add more tags as needed, e.g. branch, actions environment
-    - name: Build and Push ${{ matrix.image }}
+    - name: Build and Push ${{ matrix.image }} to ghcr.io
       id: build-and-push
       uses: docker/build-push-action@v5
       with:
@@ -137,6 +138,6 @@ jobs:
       env:
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ECR_URI }}/${{ matrix.image }}:${{ github.sha }}
-        docker push ${{ env.ECR_URI }}/${{ matrix.image }}:${{ github.sha }}
+        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ECR_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.ECR_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
