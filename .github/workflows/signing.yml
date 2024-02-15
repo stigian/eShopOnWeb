@@ -107,6 +107,9 @@ jobs:
     #     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
     #     DIGEST: ${{ steps.build-and-push.outputs.digest }}
 
+    - name: List local images
+      run: docker images
+
     - name: SBOM
       uses: anchore/sbom-action@v0
       with:
