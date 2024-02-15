@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  ECR_URI: 348600370629.dkr.ecr.us-gov-west-1.amazonaws.com/dotnet-repo
+  ECR_REPO: 348600370629.dkr.ecr.us-gov-west-1.amazonaws.com/dotnet-repo
   AWS_REGION: us-gov-west-1
 
 jobs:
@@ -31,10 +31,10 @@ jobs:
         fetch-depth: 1
 
     # TODO: research if we can change auth to use GitHub app instead of PAT
-    - name: Login to ${{ env.REGISTRY }}
+    - name: Login to ghcr.io
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.REGISTRY }}
+        registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.RPOC_PAT }}
 
@@ -129,9 +129,14 @@ jobs:
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
+      with:
+        registry-type: private
 
+    # Images are already built in previous step, so we just need to re-tag and push them to ECR
     - name: Push to Amazon ECR
+      env:
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ECR_URI }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ECR_URI }}/${{ matrix.image }}:${{ github.sha }}
         docker push ${{ env.ECR_URI }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
