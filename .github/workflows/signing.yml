@@ -7,8 +7,8 @@ on:
       - main
 
 env:
-  REGISTRY: ghcr.io
-  ECR_REPO: 348600370629.dkr.ecr.us-gov-west-1.amazonaws.com/dotnet-repo
+  ECR_REGISTRY: 348600370629.dkr.ecr.us-gov-west-1.amazonaws.com
+  ECR_REPO: dotnet-repo
   AWS_REGION: us-gov-west-1
 
 jobs:
@@ -136,8 +136,10 @@ jobs:
     # Images are already built in previous step, so we just need to re-tag and push them to ECR
     - name: Push to Amazon ECR
       env:
-        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPO: ${{ env.ECR_REPO }}
+        IMAGE_NAME: ${{ env.IMAGE_NAME }}
       run: |
-        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.ECR_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        docker push ${{ env.ECR_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY/$IMAGE_NAME:${{ github.sha }} .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY/$IMAGE_NAME:${{ github.sha }}
 
