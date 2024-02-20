@@ -208,12 +208,15 @@ jobs:
           # token: ${{ secrets.GITHUB_TOKEN }}
           # rules_file_name: '.zap/rules.tsv'
 
+      - name: List ZAP Scan Artifacts
+        run: ls -l
+
       - name: Upload ZAP Report for ${{ matrix.image }}
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-${{ matrix.image }}
-          path: zap-scan-${{ matrix.image }}
+          path: zap-scan-${{ matrix.image }}.zip
 
   sign_and_sbom:
     needs: [dast]
