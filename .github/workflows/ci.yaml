@@ -9,7 +9,7 @@ on:
 
 jobs:
   build_code:
-    name: Build and Test Code
+    name: Source Code Build and Test
     runs-on: ubuntu-latest
 
     steps:
@@ -21,7 +21,7 @@ jobs:
       with:
         global-json-file: ./global.json
 
-    - name: Read Solution Path
+    - name: Read Solution Path # TODO: developer input, set according to manifest file
       id: read_sln
       run: |
         SOLUTION_PATH=$(jq -r '.solution_path[]' solutions.json)
@@ -77,30 +77,29 @@ jobs:
     name: Docker Build and Scan
     runs-on: ubuntu-latest
     strategy:
-      matrix:
+      matrix: # TODO: developer input, set according to manifest file
         image:
           - Web
           - PublicApi
-    env:
-      REGISTRY: ghcr.io
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
     # TODO: change auth to use GitHub app instead of PAT
-    - name: Login to ${{ env.REGISTRY }}
+    - name: Login to ghcr.io
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.REGISTRY }}
+        registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.RPOC_PAT }}
 
     - name: Convert Image Name to Lowercase
-      run: echo "IMAGE_NAME=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_ENV
+      id: lowercase
+      run: echo "IMAGE_NAME=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
 
     # TODO: add docker/metadata-action to apply tags based on branch, env, etc.
-    # TODO: consider project structure, where dockerfile might be, how devs might provide manifests, etc.
+    # TODO: developer input, file parameter should be set based on manifest file
     - name: Build Docker Image for ${{ matrix.image }}
       uses: docker/build-push-action@v5
       with:
@@ -108,7 +107,7 @@ jobs:
         file: ./src/${{ matrix.image }}/Dockerfile
         push: false
         tags: |
-          ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha}}
+          ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}:${{ github.sha}}
         labels: |
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
@@ -133,7 +132,7 @@ jobs:
       with:
         scan-type: 'image'
         scanners: 'vuln,secret'
-        image-ref: 'ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}'
+        image-ref: 'ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}:${{ github.sha }}'
         format: 'sarif'
         output: 'trivy-results.sarif'
         ignore-unfixed: false
@@ -150,3 +149,50 @@ jobs:
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
+
+
+  dast:
+    needs: [image_scan]
+    name: OWASP Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: # TODO: developer input, set according to manifest file
+        image:
+          - Web
+          - PublicAPI
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Start the Application
+        run: |
+          docker-compose build
+          docker-compose up -d
+
+      # TODO: developer input, set target URL based on image or manifest
+      - name: Set Target URL
+        id: set_target
+        run: |
+          if [[ "${{ matrix.image }}" == "Web" ]]; then
+            echo "TARGET=http://localhost:5106" >> $GITHUB_OUTPUT
+          else
+            echo "TARGET=http://localhost:5200" >> $GITHUB_OUTPUT
+          fi
+
+      - name: OWASP Scan ${{ matrix.image }}
+        uses: zaproxy/action-baseline@v0.11.0
+        with:
+          target: ${{ steps.set_target.outputs.TARGET }}
+          allow_issue_writing: false # Skip creating issue for now
+          docker_name: 'ghcr.io/zaproxy/zaproxy:20231218-stable' # zaproxy:20240103-stable breaks due to https://github.com/zaproxy/action-full-scan/issues/39
+          artifact_name: zap-scan-${{ matrix.image }}
+          # cmd_options: '-d' # '-d' is for debug mode
+          # token: ${{ secrets.GITHUB_TOKEN }}
+          # rules_file_name: '.zap/rules.tsv'
+
+      - name: Upload ZAP Report for ${{ matrix.image }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-scan-${{ matrix.image }}
+          path: zap_scan
