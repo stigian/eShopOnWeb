@@ -7,6 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env: # TODO: set as Actions secrets/variables
+  AWS_REGION: us-gov-west-1
+  AWS_ROLE: arn:aws-us-gov:iam::348600370629:role/github-actions-ecr-role
+
 jobs:
   build_code:
     name: Source Code Build and Test
@@ -213,9 +217,6 @@ jobs:
         image:
           - Web
           - PublicApi
-    env: # TODO: set as Actions secrets/variables
-      AWS_REGION: us-gov-west-1
-      AWS_ROLE: arn:aws-us-gov:iam::348600370629:role/github-actions-ecr-role
 
     steps:
     - name: Checkout Repository
@@ -246,22 +247,25 @@ jobs:
         images: ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}
         tags: |
           type=sha,format=long,prefix=,suffix=
-          type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+          type=raw,value=main,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+        flavor: |
+          latest=auto
+          prefix=
+          suffix=
         labels: |
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-    - name: Save Image Tags
-      run: echo "${{ steps.docker_meta.outputs.tags }}" > imagetags-${{ matrix.image }}.txt
+    - name: Save Image Tag
+      run: echo "${{ steps.docker_meta.outputs.tags }}" | head -n 1 > image-tag-${{ matrix.image }}.txt
 
-    # Upload image tags to be used by other workflows
+    # Upload image tags to be used by other jobs in this workflow
     - name: Upload Image Tags
       uses: actions/upload-artifact@v4
       with:
-        name: image-tags-${{ matrix.image }}
-        path: imagetags-${{ matrix.image }}.txt
+        name: image-tag-${{ matrix.image }}
+        path: image-tag-${{ matrix.image }}.txt
 
-    # TODO: consider project structure, where dockerfile might be, how devs might provide manifests, etc.
-    # TODO: add more tags as needed, e.g. branch, actions environment
+    # TODO: developer input, set according to manifest file
     - name: Build and Push ${{ matrix.image }} to ghcr.io
       id: build-and-push
       uses: docker/build-push-action@v5
@@ -283,7 +287,7 @@ jobs:
       with:
         cosign-release: 'v2.2.3' # optional
 
-    - name: Verify Cosign version
+    - name: Verify Cosign Version
       run: cosign version
 
     # This is a short-lived key that won't be easy to verify by downstream consumers
@@ -322,31 +326,56 @@ jobs:
         artifact-name: sbom-${{ matrix.image }}-${{ github.sha }}.spdx.json
         upload-artifact: true
 
-  #   - name: Configure AWS Credentials for GovCloud
-  #     uses: aws-actions/configure-aws-credentials@v4
-  #     with:
-  #       audience: sts.amazonaws.com
-  #       aws-region: ${{ env.AWS_REGION }}
-  #       role-to-assume: ${{ env.AWS_ROLE }}
-  #       # role-session-name: GitHubActions-${{ github.actor }}
+  deploy_prod:
+    needs: [sign_and_sbom]
+    environment: production
+    name: Deploy to Production Registry
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: # TODO: developer input, set according to manifest file
+        image:
+          - Web
+          - PublicApi
 
-  #   - name: Login to Amazon ECR
-  #     id: login-ecr
-  #     uses: aws-actions/amazon-ecr-login@v2
-  #     with:
-  #       registry-type: private
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-  #   # Images are already built in previous step, so we just need to re-tag and push them to ECR
-  #   # ECR naming convention is different from GHCR, each ECR repo corresponds to a single image
-  #   # https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-create.html
-  #   # Will need to coordinate ECR repo naming to GitHub repo naming so that we can reuse variables
-  #   # in this workflow, like:
-  #   #   ECR_REPO_NAME: ${{ github.repository }}
-  #   #   ECR_IMAGE_NAME: ${{ matrix.image }}
-  #   - name: Push to Amazon ECR
-  #     env:
-  #       ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-  #     run: |
-  #       docker tag ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}:${{ github.sha }} $ECR_REGISTRY/${{ steps.lowercase.outputs.IMAGE_NAME }}:${{ github.sha }}
-  #       docker push $ECR_REGISTRY/${{ steps.lowercase.outputs.IMAGE_NAME }}:${{ github.sha }}
+    - name: Get Image Tag Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: image-tag-${{ matrix.image }}
+        path: image-tag-${{ matrix.image }}.txt
+
+    - name: Read Image Tag
+      id: read_tag
+      run: echo "IMAGE_TAG=$(cat image-tag-${{ matrix.image }}.txt)" >> $GITHUB_OUTPUT
+
+    - name: Configure AWS Credentials for GovCloud
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        audience: sts.amazonaws.com
+        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: ${{ env.AWS_ROLE }}
+        # role-session-name: GitHubActions-${{ github.actor }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+      with:
+        registry-type: private
+
+    # ECR naming convention is different from GHCR, each ECR repo corresponds to a single image
+    # https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-create.html
+    # Will need to coordinate ECR repo naming to GitHub repo naming so that we can reuse variables
+    # in this workflow, like:
+    #   ECR_REPO_NAME: ${{ github.repository }}
+    #   ECR_IMAGE_NAME: ${{ matrix.image }}
+    - name: Push to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      run: |
+        docker pull ${{ steps.read_tag.outputs.IMAGE_TAG }}
+        docker tag ${{ steps.read_tag.outputs.IMAGE_TAG }} $ECR_REGISTRY/${{ steps.read_tag.outputs.IMAGE_TAG }}
+        docker push $ECR_REGISTRY/${{ steps.read_tag.outputs.IMAGE_TAG }}
 
