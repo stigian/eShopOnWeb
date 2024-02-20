@@ -251,12 +251,8 @@ jobs:
       with:
         images: ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}
         tags: |
-          type=sha,format=long,priority=850
+          type=sha,format=long,prefix=,suffix=,priority=850
           type=raw,value=main,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
-        flavor: |
-          latest=auto
-          prefix=
-          suffix=
         labels: |
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
