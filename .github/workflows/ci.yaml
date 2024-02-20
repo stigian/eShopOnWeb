@@ -1,4 +1,4 @@
-name: Dotnet Core
+name: Dotnet DevSecOps
 
 on:
   push:
@@ -200,127 +200,127 @@ jobs:
           name: zap-scan-${{ matrix.image }}
           path: zap_scan
 
-  # sign_and_sbom:
-  #   needs: [dast]
-  #   name: Sign and SBOM
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #     id-token: write # needed for signing the images with GitHub OIDC Token
-  #   strategy:
-  #     matrix: # TODO: developer input, set according to manifest file
-  #       image:
-  #         - Web
-  #         - PublicApi
-  #   env: # TODO: set as Actions secrets/variables
-  #     AWS_REGION: us-gov-west-1
-  #     AWS_ROLE: arn:aws-us-gov:iam::348600370629:role/github-actions-ecr-role
+  sign_and_sbom:
+    needs: [dast]
+    name: Sign and SBOM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # needed for signing the images with GitHub OIDC Token
+    strategy:
+      matrix: # TODO: developer input, set according to manifest file
+        image:
+          - Web
+          - PublicApi
+    env: # TODO: set as Actions secrets/variables
+      AWS_REGION: us-gov-west-1
+      AWS_ROLE: arn:aws-us-gov:iam::348600370629:role/github-actions-ecr-role
 
-  #   steps:
-  #   - name: Checkout Repository
-  #     uses: actions/checkout@v4
-  #     with:
-  #       fetch-depth: 1
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
 
-  #   # TODO: research if we can change auth to use GitHub app instead of PAT
-  #   - name: Login to ghcr.io
-  #     uses: docker/login-action@v3
-  #     with:
-  #       registry: ghcr.io
-  #       username: ${{ github.actor }}
-  #       password: ${{ secrets.RPOC_PAT }}
+    # TODO: research if we can change auth to use GitHub app instead of PAT
+    - name: Login to ghcr.io
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.RPOC_PAT }}
 
-  #   # Convert to lowercase for ghcr.io
-  #   # This step can be eliminated if we enforce lowercase image names in the manifest
-  #   - name: Format Image Names
-  #     id: lowercase
-  #     run: echo "IMAGE_NAME=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
+    # Convert to lowercase for ghcr.io
+    # This step can be eliminated if we enforce lowercase image names in the manifest
+    - name: Format Image Names
+      id: lowercase
+      run: echo "IMAGE_NAME=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
 
-  #   # Need to decide how to handle latest tag. Should it be on every branch, or just main, or just releases?
-  #   # For now we put it on main for testing purposes.
-  #   - name: Generate GHCR Metadata
-  #     id: docker_meta
-  #     uses: docker/metadata-action@v5
-  #     with:
-  #       images: ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}
-  #       tags: |
-  #         type=sha,format=long,prefix=,suffix=
-  #         type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
-  #       labels: |
-  #         org.opencontainers.image.source=https://github.com/${{ github.repository }}
+    # Need to decide how to handle latest tag. Should it be on every branch, or just main, or just releases?
+    # For now we put it on main for testing purposes.
+    - name: Generate GHCR Metadata
+      id: docker_meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}
+        tags: |
+          type=sha,format=long,prefix=,suffix=
+          type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+        labels: |
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-  #   - name: Save Image Tags
-  #     run: echo "${{ steps.docker_meta.outputs.tags }}" > imagetags-${{ matrix.image }}.txt
+    - name: Save Image Tags
+      run: echo "${{ steps.docker_meta.outputs.tags }}" > imagetags-${{ matrix.image }}.txt
 
-  #   # Upload image tags to be used by other workflows
-  #   - name: Upload Image Tags
-  #     uses: actions/upload-artifact@v4
-  #     with:
-  #       name: image-tags-${{ matrix.image }}
-  #       path: imagetags-${{ matrix.image }}.txt
+    # Upload image tags to be used by other workflows
+    - name: Upload Image Tags
+      uses: actions/upload-artifact@v4
+      with:
+        name: image-tags-${{ matrix.image }}
+        path: imagetags-${{ matrix.image }}.txt
 
-  #   # TODO: consider project structure, where dockerfile might be, how devs might provide manifests, etc.
-  #   # TODO: add more tags as needed, e.g. branch, actions environment
-  #   - name: Build and Push ${{ matrix.image }} to ghcr.io
-  #     id: build-and-push
-  #     uses: docker/build-push-action@v5
-  #     with:
-  #       platforms: linux/amd64
-  #       context: .
-  #       file: ./src/${{ matrix.image }}/Dockerfile
-  #       push: true
-  #       tags: ${{ steps.docker_meta.outputs.tags }}
-  #       # tags: |
-  #       #   ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
-  #       #   ghcr.io/${{ env.IMAGE_NAME }}:latest
-  #       labels: ${{ steps.docker_meta.outputs.labels }}
-  #       # labels: |
-  #       #   org.opencontainers.image.source=https://github.com/${{ github.repository }}
+    # TODO: consider project structure, where dockerfile might be, how devs might provide manifests, etc.
+    # TODO: add more tags as needed, e.g. branch, actions environment
+    - name: Build and Push ${{ matrix.image }} to ghcr.io
+      id: build-and-push
+      uses: docker/build-push-action@v5
+      with:
+        platforms: linux/amd64
+        context: .
+        file: ./src/${{ matrix.image }}/Dockerfile
+        push: true
+        tags: ${{ steps.docker_meta.outputs.tags }}
+        # tags: |
+        #   ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        #   ghcr.io/${{ env.IMAGE_NAME }}:latest
+        labels: ${{ steps.docker_meta.outputs.labels }}
+        # labels: |
+        #   org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
-  #   - name: Install Cosign
-  #     uses: sigstore/cosign-installer@v3.4.0
-  #     with:
-  #       cosign-release: 'v2.2.3' # optional
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v3.4.0
+      with:
+        cosign-release: 'v2.2.3' # optional
 
-  #   - name: Verify Cosign version
-  #     run: cosign version
+    - name: Verify Cosign version
+      run: cosign version
 
-  #   # This is a short-lived key that won't be easy to verify by downstream consumers
-  #   # Technically the actions runner is signing the image, not an individual or organization
-  #   # Instead, we may wish to use a private key signing method, as shown in the commented
-  #   # out example below.
-  #   - name: Sign the Images with GitHub OIDC Token
-  #     env:
-  #       DIGEST: ${{ steps.build-and-push.outputs.digest }}
-  #       TAGS: ${{ steps.docker_meta.outputs.tags }}
-  #     run: |
-  #       images=""
-  #       for tag in ${TAGS}; do
-  #         images+="${tag}@${DIGEST} "
-  #       done
-  #       cosign sign --yes ${images}
+    # This is a short-lived key that won't be easy to verify by downstream consumers
+    # Technically the actions runner is signing the image, not an individual or organization
+    # Instead, we may wish to use a private key signing method, as shown in the commented
+    # out example below.
+    - name: Sign the Images with GitHub OIDC Token
+      env:
+        DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        TAGS: ${{ steps.docker_meta.outputs.tags }}
+      run: |
+        images=""
+        for tag in ${TAGS}; do
+          images+="${tag}@${DIGEST} "
+        done
+        cosign sign --yes ${images}
 
-  #   # # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-  #   # - name: Sign image with a key
-  #   #   run: |
-  #   #     images=""
-  #   #     for tag in ${TAGS}; do
-  #   #       images+="${tag}@${DIGEST} "
-  #   #     done
-  #   #     cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${images}
-  #   #   env:
-  #   #     TAGS: ${{ steps.docker_meta.outputs.tags }}
-  #   #     COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-  #   #     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-  #   #     DIGEST: ${{ steps.build-and-push.outputs.digest }}
+    # # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+    # - name: Sign image with a key
+    #   run: |
+    #     images=""
+    #     for tag in ${TAGS}; do
+    #       images+="${tag}@${DIGEST} "
+    #     done
+    #     cosign sign --yes --key env://COSIGN_PRIVATE_KEY ${images}
+    #   env:
+    #     TAGS: ${{ steps.docker_meta.outputs.tags }}
+    #     COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+    #     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+    #     DIGEST: ${{ steps.build-and-push.outputs.digest }}
 
-  #   - name: Generate SBOM
-  #     uses: anchore/sbom-action@v0
-  #     with:
-  #       image: ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}:${{ github.sha }}
-  #       artifact-name: sbom-${{ matrix.image }}-${{ github.sha }}.spdx.json
-  #       upload-artifact: true
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}:${{ github.sha }}
+        artifact-name: sbom-${{ matrix.image }}-${{ github.sha }}.spdx.json
+        upload-artifact: true
 
   #   - name: Configure AWS Credentials for GovCloud
   #     uses: aws-actions/configure-aws-credentials@v4
