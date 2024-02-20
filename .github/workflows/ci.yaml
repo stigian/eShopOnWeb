@@ -86,13 +86,13 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    # TODO: change auth to use GitHub app instead of PAT
-    - name: Login to ghcr.io
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.RPOC_PAT }}
+    # # Todo: not required unless push: true in build-push-action
+    # - name: Login to ghcr.io
+    #   uses: docker/login-action@v3
+    #   with:
+    #     registry: ghcr.io
+    #     username: ${{ github.actor }}
+    #     password: ${{ secrets.RPOC_PAT }}
 
     - name: Convert Image Name to Lowercase
       id: lowercase
@@ -367,6 +367,13 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
         role-to-assume: ${{ env.AWS_ROLE }}
         # role-session-name: GitHubActions-${{ github.actor }}
+
+    - name: Login to ghcr.io
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.RPOC_PAT }}
 
     - name: Login to Amazon ECR
       id: login-ecr
