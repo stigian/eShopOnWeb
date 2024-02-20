@@ -242,15 +242,16 @@ jobs:
       id: lowercase
       run: echo "IMAGE_NAME=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
 
-    # Need to decide how to handle latest tag. Should it be on every branch, or just main, or just releases?
-    # For now we put it on main for testing purposes.
+    # Todo: spend more time fine-tuning the metadata-action to fit tagging requirements
+    # Note that the priority flag will determine the order of tags in the metadata
+    # https://github.com/docker/metadata-action?tab=readme-ov-file#priority-attribute
     - name: Generate GHCR Metadata
       id: docker_meta
       uses: docker/metadata-action@v5
       with:
         images: ghcr.io/${{ steps.lowercase.outputs.IMAGE_NAME }}
         tags: |
-          type=sha,format=long,prefix=,suffix=
+          type=sha,format=long,priority=850
           type=raw,value=main,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
         flavor: |
           latest=auto
