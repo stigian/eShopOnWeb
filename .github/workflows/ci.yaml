@@ -39,7 +39,7 @@ jobs:
       run: dotnet test $SOLUTION_PATH --configuration Release
 
   sast:
-    name: CodeQL Analysis
+    name: SAST
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -78,7 +78,7 @@ jobs:
 
   image_scan:
     needs: [build_code, sast]
-    name: Docker Build and Scan
+    name: Image Scan
     runs-on: ubuntu-latest
     strategy:
       matrix: # TODO: developer input, set according to manifest file
@@ -157,7 +157,7 @@ jobs:
 
   dast:
     needs: [image_scan]
-    name: OWASP Scan
+    name: DAST
     runs-on: ubuntu-latest
     strategy:
       matrix: # TODO: developer input, set according to manifest file
@@ -327,6 +327,7 @@ jobs:
         upload-artifact: true
 
   deploy_prod:
+    if: github.ref == 'refs/heads/main'
     needs: [sign_and_sbom]
     environment: production
     name: Deploy to Production Registry
