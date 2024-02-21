@@ -358,7 +358,11 @@ jobs:
 
     - name: Read Image Tag
       id: read_tag
-      run: echo "IMAGE_TAG=$(cat image-tag-${{ matrix.image }}.txt)" >> $GITHUB_OUTPUT
+      run: echo "GHCR_TAG=$(cat image-tag-${{ matrix.image }}.txt)" >> $GITHUB_OUTPUT
+
+    - name: Format Image Names
+      id: lowercase
+      run: echo "ECR_TAG=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
 
     - name: Configure AWS Credentials for GovCloud
       uses: aws-actions/configure-aws-credentials@v4
@@ -373,7 +377,7 @@ jobs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ secrets.RPOC_PAT }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -381,17 +385,15 @@ jobs:
       with:
         registry-type: private
 
+    # This step feels like it could be revised for clarity, but I need to test some variations separately
     # ECR naming convention is different from GHCR, each ECR repo corresponds to a single image
     # https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-create.html
-    # Will need to coordinate ECR repo naming to GitHub repo naming so that we can reuse variables
-    # in this workflow, like:
     #   ECR_REPO_NAME: ${{ github.repository }}
     #   ECR_IMAGE_NAME: ${{ matrix.image }}
     - name: Push to Amazon ECR
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        docker pull ${{ steps.read_tag.outputs.IMAGE_TAG }}
-        docker tag ${{ steps.read_tag.outputs.IMAGE_TAG }} $ECR_REGISTRY/${{ steps.read_tag.outputs.IMAGE_TAG }}
-        docker push $ECR_REGISTRY/${{ steps.read_tag.outputs.IMAGE_TAG }}
-
+        docker pull ${{ steps.read_tag.outputs.GHCR_TAG }}
+        docker tag ${{ steps.read_tag.outputs.GHCR_TAG }} $ECR_REGISTRY/${{ steps.lowercase.outputs.ECR_TAG }}:${{ github.sha }}
+        docker push $ECR_REGISTRY/${{ steps.lowercase.outputs.ECR_TAG }}:${{ github.sha }}
