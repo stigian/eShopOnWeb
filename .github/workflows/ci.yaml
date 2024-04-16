@@ -76,6 +76,11 @@ jobs:
     needs: [build_code, sast]
     name: Image Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      security-events: write
     strategy:
       matrix: # TODO: developer input, set according to manifest file
         image:
@@ -92,7 +97,7 @@ jobs:
     #   with:
     #     registry: ghcr.io
     #     username: ${{ github.actor }}
-    #     password: ${{ secrets.RPOC_PAT }}
+    #     password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Convert Image Name to Lowercase
       id: lowercase
@@ -127,7 +132,7 @@ jobs:
         fi
 
     - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
+      uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d
       continue-on-error: true
       with:
         scan-type: 'image'
@@ -139,14 +144,14 @@ jobs:
         vuln-type: 'os,library'
         severity: ${{ steps.severity.outputs.SEVERITY }}
         exit-code: ${{ steps.severity.outputs.EXIT_CODE }}
-        github-pat: ${{ secrets.RPOC_PAT }}
+        github-pat: ${{ secrets.GITHUB_TOKEN }}
       env:
         TRIVY_USERNAME: ${{ github.actor }}
-        TRIVY_PASSWORD: ${{ secrets.RPOC_PAT }}
+        TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload Trivy scan results to GitHub Security tab
       if: always()
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results.sarif'
 
