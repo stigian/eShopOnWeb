@@ -7,6 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build_code:
     name: Source Code Build and Test
@@ -126,14 +130,16 @@ jobs:
         if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
           echo "SEVERITY=HIGH" >> $GITHUB_OUTPUT
           echo "EXIT_CODE=1" >> $GITHUB_OUTPUT
+          echo "CONTINUE_ON_ERROR=false" >> $GITHUB_OUTPUT
         else
           echo "SEVERITY=CRITICAL" >> $GITHUB_OUTPUT
           echo "EXIT_CODE=0" >> $GITHUB_OUTPUT
+          echo "CONTINUE_ON_ERROR=true" >> $GITHUB_OUTPUT
         fi
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d
-      continue-on-error: true
+      continue-on-error: ${{ steps.severity.outputs.CONTINUE_ON_ERROR }}
       with:
         scan-type: 'image'
         scanners: 'vuln,secret'
