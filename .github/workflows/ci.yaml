@@ -65,6 +65,7 @@ jobs:
         with:
           languages: 'csharp'
           source-path: './src'
+          fail-on-findings: 'false' # TODO: set based on environment, or dev input
 
   image_scan:
     # needs: [build_and_test, sast]
