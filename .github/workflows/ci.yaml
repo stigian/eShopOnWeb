@@ -66,24 +66,35 @@ jobs:
           languages: 'csharp'
           source-path: './src'
 
-  # image_scan:
-  #   needs: [build_code, sast]
-  #   name: Image Scan
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #     packages: write
-  #     id-token: write
-  #     security-events: write
+  image_scan:
+    # needs: [build_and_test, sast]
+    name: Image Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      security-events: write
   #   strategy:
   #     matrix: # TODO: developer input, set according to manifest file
   #       image:
   #         - Web
   #         - PublicApi
 
-  #   steps:
-  #   - name: Checkout Repository
-  #     uses: actions/checkout@v4
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # TODO: This step is not required if the composite actions are in a public
+      # repository. Adjust accordingly once the composite actions are public.
+      - name: Checkout Actions Repository
+        uses: actions/checkout@v4
+        with:
+          repository: stigian/archimedes-workflows-dotnet
+          ref: init
+          path: ./composite
+          token: ${{ secrets.ACTIONS_PAT }}
 
   #   # # Todo: not required unless push: true in build-push-action
   #   # - name: Login to ghcr.io
@@ -96,6 +107,20 @@ jobs:
   #   - name: Convert Image Name to Lowercase
   #     id: lowercase
   #     run: echo "IMAGE_NAME=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
+
+      - name: Scan Container Image
+        uses: ./composite/.github/actions/image-scan
+        with:
+          dockerfile-path: './src/Web/Dockerfile'
+          image-name: 'web'
+          # image-tag: 'latest'
+          # fail-on-findings: 'true'
+          # severity-displayed: 'CRITICAL'
+          # ignore-path: './.trivyignore'
+
+
+
+
 
   #   # TODO: add docker/metadata-action to apply tags based on branch, env, etc.
   #   # TODO: developer input, file parameter should be set based on manifest file
