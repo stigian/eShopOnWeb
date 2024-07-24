@@ -23,22 +23,16 @@ jobs:
       - name: Checkout This Repository
         uses: actions/checkout@v4
 
-      - name: List files after checking out this repository
-        run: tree
-
       - name: Checkout Actions Repository
         uses: actions/checkout@v4
         with:
           repository: stigian/archimedes-workflows-dotnet
           ref: init
-          path: .github/actions
+          path: ./composite
           token: ${{ secrets.ACTIONS_PAT }}
 
-      - name: List files after checking out actions repository
-        run: tree
-
       - name: Build and Test
-        uses: ./.github/actions/.github/actions/build-and-test
+        uses: ./composite/.github/actions/build-and-test
         with:
           dotnet-version: '8.0'
           # global-json-path: './global.json'
