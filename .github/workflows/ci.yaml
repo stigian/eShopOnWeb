@@ -31,13 +31,14 @@ jobs:
         with:
           repository: stigian/archimedes-workflows-dotnet
           ref: init
+          path: .github/actions
           token: ${{ secrets.ACTIONS_PAT }}
 
       - name: List files after checking out actions repository
         run: tree
 
       - name: Build and Test
-        uses: ./.github/actions/build-and-test
+        uses: ./.github/actions/.github/actions/build-and-test
         with:
           dotnet-version: '8.0'
           # global-json-path: './global.json'
