@@ -20,22 +20,21 @@ jobs:
     - name: Checkout This Repository
       uses: actions/checkout@v4
 
-    # - name: Checkout Actions Repository
-    #   uses: actions/checkout@v4
-    #   with:
-    #     repository: stigian/archimedes-workflows-dotnet
-    #     ref: dev
-    #     token: ${{ secrets.ACTIONS_PAT }}
-    #     path: .github/actions
+    - name: Checkout Actions Repository
+      uses: actions/checkout@v4
+      with:
+        repository: stigian/archimedes-workflows-dotnet
+        ref: init
+        token: ${{ secrets.ACTIONS_PAT }}
+        path: .github/actions
 
     - name: Build and Test
-      uses: stigian/archimedes-workflows-dotnet/.github/actions/build-and-test@init
+      uses: ./.github/actions/build-and-test
       with:
         dotnet-version: '8.0'
         # global-json-path: './global.json'
         sln-path: './eShopOnWeb.sln'
-      env:
-        token: ${{ secrets.ACTIONS_PAT }}
+
 
 
 
