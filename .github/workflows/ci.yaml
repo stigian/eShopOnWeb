@@ -17,12 +17,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install tree
-        run: sudo apt-get update && sudo apt-get install -y tree
-
       - name: Checkout This Repository
         uses: actions/checkout@v4
 
+      # TODO: This step is not required if the composite actions are in a public
+      # repository. Adjust accordingly once the composite actions are public.
       - name: Checkout Actions Repository
         uses: actions/checkout@v4
         with:
@@ -34,50 +33,38 @@ jobs:
       - name: Build and Test
         uses: ./composite/.github/actions/build-and-test
         with:
-          dotnet-version: '8.0'
-          # global-json-path: './global.json'
+          # dotnet-version: '8.0' # Developer must specify versions in global.json
+          global-json-path: './global.json'
           sln-path: './eShopOnWeb.sln'
 
+  sast:
+    name: SAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
+    steps:
+      - name: Checkout This Repository
+        uses: actions/checkout@v4
 
+      # TODO: This step is not required if the composite actions are in a public
+      # repository. Adjust accordingly once the composite actions are public.
+      - name: Checkout Actions Repository
+        uses: actions/checkout@v4
+        with:
+          repository: stigian/archimedes-workflows-dotnet
+          ref: init
+          path: ./composite
+          token: ${{ secrets.ACTIONS_PAT }}
 
-  # sast:
-  #   name: SAST
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 30
-  #   permissions:
-  #     actions: read
-  #     contents: read
-  #     security-events: write
-
-  #   steps:
-  #   - name: Checkout Repository
-  #     uses: actions/checkout@v4
-
-  #   - name: Initialize CodeQL
-  #     uses: github/codeql-action/init@v3
-  #     with:
-  #       languages: csharp
-
-  #   # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
-  #   # If this step fails, then you should remove it and run the build manually (see below)
-  #   - name: Autobuild
-  #     uses: github/codeql-action/autobuild@v3
-
-  #   #  If the Autobuild fails above, remove it and uncomment the following lines.
-  #   #  Use either the buildscript.sh step, or the solution file steps.
-
-  #   # - name: Run, Build Application using script
-  #   #   run: ./location_of_script_within_repo/buildscript.sh
-
-  #   # - name: Find solution file
-  #   #   run: echo "SOLUTION_FILE=$(find . -maxdepth 1 -name '*.sln' | head -n 1)" >> $GITHUB_ENV
-
-  #   # - name: Build solution
-  #   #   run: dotnet build $SOLUTION_FILE --configuration Release
-
-  #   - name: Perform CodeQL Analysis # Automatically uploads results to GitHub Security tab
-  #     uses: github/codeql-action/analyze@v3
+      - name: Static Application Security Test
+        uses: ./composite/.github/actions/sast
+        with:
+          languages: 'csharp'
+          source-path: './src'
 
   # image_scan:
   #   needs: [build_code, sast]
