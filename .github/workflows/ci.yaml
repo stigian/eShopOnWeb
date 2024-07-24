@@ -26,7 +26,6 @@ jobs:
         repository: stigian/archimedes-workflows-dotnet
         ref: init
         token: ${{ secrets.ACTIONS_PAT }}
-        path: .github/actions
 
     - name: Build and Test
       uses: ./.github/actions/build-and-test
