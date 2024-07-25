@@ -12,7 +12,6 @@ concurrency:
   cancel-in-progress: true
 
 env: # TODO: swap these into the steps below, create more env as req'd
-  composite-path: './composite'
   dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
   target-url: 'http://localhost:80' # TODO: developer input, set based on manifest file
   image-name: 'publicapi' # TODO: developer input, set based on manifest file
@@ -34,11 +33,11 @@ jobs:
         with:
           repository: stigian/archimedes-workflows-dotnet
           ref: init # Branch, tag, or SHA
-          path: ${{ env.composite-path }}
+          path: ./composite
           token: ${{ secrets.ACTIONS_PAT }}
 
       - name: Build and Test
-        uses: ${{ env.composite-path }}/.github/actions/build-and-test
+        uses: ./composite/.github/actions/build-and-test
         with:
           # dotnet-version: '8.0' # Developer must specify versions in global.json
           global-json-path: './global.json'
@@ -64,11 +63,11 @@ jobs:
         with:
           repository: stigian/archimedes-workflows-dotnet
           ref: init
-          path: ${{ env.composite-path }}
+          path: ./composite
           token: ${{ secrets.ACTIONS_PAT }}
 
       - name: Static Application Security Test
-        uses: ${{ env.composite-path }}/.github/actions/sast
+        uses: ./composite/.github/actions/sast
         with:
           languages: 'csharp'
           source-path: './src'
@@ -105,7 +104,7 @@ jobs:
         with:
           repository: stigian/archimedes-workflows-dotnet
           ref: init
-          path: ${{ env.composite-path }}
+          path: ./composite
           token: ${{ secrets.ACTIONS_PAT }}
 
     #   # # Todo: not required unless push: true in build-push-action
@@ -121,7 +120,7 @@ jobs:
     #     run: echo "IMAGE_NAME=$(echo "${{ github.repository }}/${{ matrix.image }}" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
 
       - name: Scan Container Image
-        uses: ${{ env.composite-path }}/.github/actions/image-scan
+        uses: ./composite/.github/actions/image-scan
         with:
           dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
           image-name: 'publicapi'
@@ -154,11 +153,11 @@ jobs:
         with:
           repository: stigian/archimedes-workflows-dotnet
           ref: init
-          path: ${{ env.composite-path }}
+          path: ./composite
           token: ${{ secrets.ACTIONS_PAT }}
 
       - name: Dynamic Application Security Test
-        uses: ${{ env.composite-path }}/.github/actions/dast
+        uses: ./composite/.github/actions/dast
         with:
           dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
           target-url: 'http://localhost:80' # TODO: developer input, set based on manifest file
