@@ -11,9 +11,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# env:
-#   DOTNET_CLI_TELEMETRY_OPTOUT: 1
-#   DOTNET_NOLOGO: 1
+env: # TODO: swap these into the steps below, create more env as req'd
+  dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
+  target-url: 'http://localhost:80' # TODO: developer input, set based on manifest file
+  image-name: 'publicapi' # TODO: developer input, set based on manifest file
+  container-port: '5200'
 
 jobs:
   build_and_test:
@@ -153,6 +155,11 @@ jobs:
           ref: init
           path: ./composite
           token: ${{ secrets.ACTIONS_PAT }}
+
+      - name: Set Permissions for zap.yml
+        shell: bash
+        run: |
+          chmod 644 ./composite/.github/actions/dast/zap.yml
 
       - name: Dynamic Application Security Test
         uses: ./composite/.github/actions/dast
