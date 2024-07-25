@@ -224,7 +224,7 @@ jobs:
           dockerfile-path: ${{ matrix.dockerfile-path }} # TODO: developer input, set based on manifest file
           docker-build-context: '.' # TODO: developer input, set based on manifest file
           image-name: ${{ matrix.image-name }} # TODO: developer input, set based on manifest file
-
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   # deploy_prod:
   #   if: github.ref == 'refs/heads/main'
