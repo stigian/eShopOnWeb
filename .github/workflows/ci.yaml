@@ -11,6 +11,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  # DOTNET_NOLOGO: 1
+
 jobs:
   build_and_test:
     name: Build and Test
@@ -116,8 +120,8 @@ jobs:
       - name: Scan Container Image
         uses: ./composite/.github/actions/image-scan
         with:
-          dockerfile-path: './src/Web/Dockerfile' # TODO: developer input, set based on manifest file
-          image-name: 'web'
+          dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
+          image-name: 'publicapi'
           # image-tag: 'latest'
           # fail-on-findings: 'true'
           # severity-displayed: 'CRITICAL'
@@ -153,9 +157,9 @@ jobs:
       - name: Dynamic Application Security Test
         uses: ./composite/.github/actions/dast
         with:
-          dockerfile-path: './src/Web/Dockerfile' # TODO: developer input, set based on manifest file
-          target-url: 'http://localhost:5106' # TODO: developer input, set based on manifest file
-          image-name: 'web' # TODO: developer input, set based on manifest file
+          dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
+          target-url: 'http://localhost:80' # TODO: developer input, set based on manifest file
+          image-name: 'publicapi' # TODO: developer input, set based on manifest file
           # image-name: 'web' # TODO: developer input, set based on manifest file
           # image-tag: 'latest'
           # scan-severity-threshold: 'HIGH'
