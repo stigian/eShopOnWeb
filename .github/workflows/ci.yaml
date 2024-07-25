@@ -198,11 +198,12 @@ jobs:
       attestations: write
     strategy:
       matrix: # TODO: developer input, set according to manifest file
-        image:
+        include:
           - image-name: 'eshoppublicapi'
             dockerfile-path: './src/PublicApi/Dockerfile'
           - image-name: 'eshopwebmvc'
             dockerfile-path: './src/Web/Dockerfile'
+
     steps:
 
       - name: Checkout This Repository
