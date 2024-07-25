@@ -160,6 +160,7 @@ jobs:
           dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
           target-url: 'http://localhost:80' # TODO: developer input, set based on manifest file
           image-name: 'publicapi' # TODO: developer input, set based on manifest file
+          container-port: '5200'
           # image-name: 'web' # TODO: developer input, set based on manifest file
           # image-tag: 'latest'
           # scan-severity-threshold: 'HIGH'
