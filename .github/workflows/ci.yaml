@@ -160,7 +160,7 @@ jobs:
         uses: ./composite/.github/actions/dast
         with:
           dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
-          target-url: 'http://localhost' # TODO: developer input, set based on manifest file
+          target-url: 'http://localhost:5200' # TODO: developer input, set based on manifest file
           image-name: 'publicapi' # TODO: developer input, set based on manifest file
           host-port: '5200'
           container-port: '5200' # TODO: developer input, set based on manifest file, mapped to port 80 on the runner
