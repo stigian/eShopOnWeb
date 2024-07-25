@@ -1,4 +1,4 @@
-name: Dotnet DevSecOps
+name: Archimedes - Dotnet
 
 on:
   push:
@@ -89,14 +89,10 @@ jobs:
     strategy:
       matrix: # TODO: developer input, set according to manifest file
         include:
-          - dockerfile-path: './src/PublicApi/Dockerfile'
-            image-name: 'publicapi'
-            host-port: '5200'
-            container-port: '5200'
-          - dockerfile-path: './src/Web/Dockerfile'
-            image-name: 'web'
-            host-port: '5106'
-            container-port: '5106'
+          - image-name: 'eshoppublicapi'
+            dockerfile-path: './src/PublicApi/Dockerfile'
+          - image-name: 'eshopwebmvc'
+            dockerfile-path: './src/Web/Dockerfile'
 
     steps:
 
@@ -145,19 +141,18 @@ jobs:
     strategy:
       matrix: # TODO: developer input, set according to manifest file
         include:
-          - docker-compose-path: './docker-compose.yml'
+          - image-name: 'eshopwebmvc'
             target-url: 'http://localhost:5106'
             host-port: '5106'
-            image-name: 'web'
             container-port: '5106'
-          - docker-compose-path: './docker-compose.yml'
+          - image-name: 'eshoppublicapi'
             target-url: 'http://localhost:5200'
             host-port: '5200'
-            image-name: 'publicapi'
             container-port: '5200'
 
     steps:
-      - name: Checkout Repository
+
+      - name: Checkout This Repository
         uses: actions/checkout@v4
 
       # TODO: This step is not required if the composite actions are in a public
@@ -173,16 +168,13 @@ jobs:
       - name: Dynamic Application Security Test
         uses: ./composite/.github/actions/dast
         with:
-          docker-compose-path: ${{ matrix.docker-compose-path }} # TODO: developer input, set based on manifest file
+          docker-compose-path: './docker-compose.yml' # TODO: developer input or require it to be in root of repo, set based on manifest file
           target-url: ${{ matrix.target-url }} # TODO: developer input, set based on manifest file
           image-name: ${{ matrix.image-name }} # TODO: developer input, set based on manifest file
           host-port: ${{ matrix.host-port}} # TODO: developer input, set based on manifest file
           container-port: ${{ matrix.container-port }} # TODO: developer input, set based on manifest file, mapped to port 80 on the runner
-          fail-on-findings: 'false' # TODO: developer input, set based on manifest file
-          # image-name: 'web' # TODO: developer input, set based on manifest file
-          # image-tag: 'latest'
-          # scan-severity-threshold: 'HIGH'
-
+          fail-on-findings: 'false' # TODO: select based on deployment env (prod vs dev)
+          startup-time: '30' # Time in seconds to wait for the container to start
 
   # sign_and_sbom:
   #   needs: [dast]
