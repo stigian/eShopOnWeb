@@ -86,11 +86,17 @@ jobs:
     # Composite action scans one image at a time, so we can use a matrix in the caller workflow
     # to scan multiple images in parallel.
     # TODO: figure out how to handle multiple dockerfile-paths and image name relationships
-    #   strategy:
-    #     matrix: # TODO: developer input, set according to manifest file
-    #       image:
-    #         - Web
-    #         - PublicApi
+    strategy:
+      matrix: # TODO: developer input, set according to manifest file
+        include:
+          - dockerfile-path: './src/PublicApi/Dockerfile'
+            image-name: 'publicapi'
+            host-port: '5200'
+            container-port: '5200'
+          - dockerfile-path: './src/Web/Dockerfile'
+            image-name: 'web'
+            host-port: '5106'
+            container-port: '5106'
 
     steps:
 
@@ -122,8 +128,8 @@ jobs:
       - name: Scan Container Image
         uses: ./composite/.github/actions/image-scan
         with:
-          dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
-          image-name: 'publicapi'
+          dockerfile-path: ${{ matrix.dockerfile-path }} # TODO: developer input, set based on manifest file
+          image-name: ${{ matrix.image-name }} # TODO: developer input, set based on manifest file
           # image-tag: 'latest'
           # fail-on-findings: 'true'
           # severity-displayed: 'CRITICAL'
@@ -136,11 +142,19 @@ jobs:
     permissions:
       contents: read
       issues: write
-  #   strategy:
-  #     matrix: # TODO: developer input, set according to manifest file
-  #       image:
-  #         - Web
-  #         - PublicAPI
+    strategy:
+      matrix: # TODO: developer input, set according to manifest file
+        include:
+          - docker-compose-path: './docker-compose.yml'
+            target-url: 'http://localhost:5106'
+            host-port: '5106'
+            image-name: 'web'
+            container-port: '5106'
+          - docker-compose-path: './docker-compose.yml'
+            target-url: 'http://localhost:5200'
+            host-port: '5200'
+            image-name: 'publicapi'
+            container-port: '5200'
 
     steps:
       - name: Checkout Repository
@@ -159,11 +173,12 @@ jobs:
       - name: Dynamic Application Security Test
         uses: ./composite/.github/actions/dast
         with:
-          dockerfile-path: './src/PublicApi/Dockerfile' # TODO: developer input, set based on manifest file
-          target-url: 'http://localhost:5200' # TODO: developer input, set based on manifest file
-          image-name: 'publicapi' # TODO: developer input, set based on manifest file
-          host-port: '5200'
-          container-port: '5200' # TODO: developer input, set based on manifest file, mapped to port 80 on the runner
+          docker-compose-path: ${{ matrix.docker-compose-path }} # TODO: developer input, set based on manifest file
+          target-url: ${{ matrix.target-url }} # TODO: developer input, set based on manifest file
+          image-name: ${{ matrix.image-name }} # TODO: developer input, set based on manifest file
+          host-port: ${{ matrix.host-port}} # TODO: developer input, set based on manifest file
+          container-port: ${{ matrix.container-port }} # TODO: developer input, set based on manifest file, mapped to port 80 on the runner
+          fail-on-findings: 'false' # TODO: developer input, set based on manifest file
           # image-name: 'web' # TODO: developer input, set based on manifest file
           # image-tag: 'latest'
           # scan-severity-threshold: 'HIGH'
