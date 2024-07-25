@@ -145,10 +145,12 @@ jobs:
             target-url: 'http://localhost:5106'
             host-port: '5106'
             container-port: '8080'
+            startup-time: '30'
           - image-name: 'eshoppublicapi'
             target-url: 'http://localhost:5200'
             host-port: '5200'
             container-port: '8080'
+            startup-time: '30'
 
     steps:
 
@@ -165,16 +167,24 @@ jobs:
           path: ./composite
           token: ${{ secrets.ACTIONS_PAT }}
 
+      # Documentation:
+      #   - docker-compose-path: the repo path to the docker-compose.yml file, default is ./docker-compose.yml
+      #   - target-url: the URL where the container is listening, format http://localhost:{host-port}/{path}
+      #   - image-name: friendly name of the image to scan, no effect on image publishing
+      #   - host-port: the port the host should listen on, 1024 to 65535, default is 8080
+      #   - container-port: the port the container is listening on
+      #   - fail-on-findings: whether to fail the action if findings are found, default is false
+      #   - startup-time: time in seconds to wait for the container to start
       - name: Dynamic Application Security Test
         uses: ./composite/.github/actions/dast
         with:
-          docker-compose-path: './docker-compose.yml' # TODO: developer input or require it to be in root of repo, set based on manifest file
-          target-url: ${{ matrix.target-url }} # TODO: developer input, set based on manifest file
+          docker-compose-path: './docker-compose.yml'
+          target-url: ${{ matrix.target-url }}
           image-name: ${{ matrix.image-name }} # TODO: developer input, set based on manifest file
           host-port: ${{ matrix.host-port}} # TODO: developer input, set based on manifest file
           container-port: ${{ matrix.container-port }} # TODO: developer input, set based on manifest file, mapped to port 80 on the runner
           fail-on-findings: 'false' # TODO: select based on deployment env (prod vs dev)
-          startup-time: '30' # Time in seconds to wait for the container to start
+          startup-time: ${{ matrix.startup-time }} # Time in seconds to wait for the container to start
 
   # sign_and_sbom:
   #   needs: [dast]
