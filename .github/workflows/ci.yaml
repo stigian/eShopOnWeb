@@ -144,11 +144,11 @@ jobs:
           - image-name: 'eshopwebmvc'
             target-url: 'http://localhost:5106'
             host-port: '5106'
-            container-port: '5106'
+            container-port: '8080'
           - image-name: 'eshoppublicapi'
             target-url: 'http://localhost:5200'
             host-port: '5200'
-            container-port: '5200'
+            container-port: '8080'
 
     steps:
 
