@@ -295,9 +295,12 @@ jobs:
           docker-build-context: '.' # TODO: developer input, set based on manifest file
           image-name: ${{ matrix.image-name }} # TODO: developer input, set based on manifest file
 
-  # The codebuild-runner Terraform module names the project based on the repository name
+  # The codebuild-runner Terraform module names the project based on the repository name.
+  # The project name is lowercase, but github.event.repository.name is case-preserving.
+  # Need to figure out how to handle this discrepancy. Would like to keep lowercase
+  # across the board.
   deploy:
-    runs-on: codebuild-${{ github.event.repository.name }}
+    runs-on: codebuild-eshoponweb-${{ github.run_id }}-${{ github.run_attempt }}
     name: A job to say hello
     if: github.ref == 'refs/heads/main'
     steps:
